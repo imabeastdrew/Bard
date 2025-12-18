@@ -1,12 +1,12 @@
 # Bard
 
-Interactive narration system with AI Q&A.
+Interactive narration system
 
 ## Requirements
 
 - Python 3.11+
 - Node.js 18+
-- FFmpeg and espeak (for alignment)
+- FFmpeg and espeak
 
 ## Setup
 

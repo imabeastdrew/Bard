@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from bard.api.routes import playback_router, qa_router
+from bard.api.routes import playback_router, qa_router, transcribe_router
 from bard.config import get_settings
 from bard.database import init_db
 
@@ -31,6 +31,7 @@ app.add_middleware(
 # Include routers
 app.include_router(playback_router)
 app.include_router(qa_router)
+app.include_router(transcribe_router)
 
 
 @app.on_event("startup")

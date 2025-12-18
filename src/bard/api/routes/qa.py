@@ -52,7 +52,8 @@ async def ask_question(request: AskRequest) -> AskResponse:
     except ValueError as e:
         raise HTTPException(status_code=500, detail=f"TTS error: {e}")
     except Exception as e:
-        # Return answer without audio if TTS fails
+        # Return answer without audio if TTS fails (e.g., quota exceeded)
+        print(f"Warning: TTS synthesis failed: {e}")
         audio_url = None
 
     return AskResponse(

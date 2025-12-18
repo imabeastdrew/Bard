@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import AudioPlayer from './components/AudioPlayer'
 import ChapterSelector from './components/ChapterSelector'
 import AskBardButton from './components/AskBardButton'
-import QuestionModal from './components/QuestionModal'
 import CurrentSentence from './components/CurrentSentence'
 import Header from './components/Header'
+import useVoiceRecorder from './hooks/useVoiceRecorder'
 
 function App() {
   const [chapters, setChapters] = useState([])
@@ -12,13 +12,150 @@ function App() {
   const [alignment, setAlignment] = useState([])
   const [currentTime, setCurrentTime] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Ask Bard state machine
+  // null | 'listening' | 'transcribing' | 'preview' | 'thinking' | 'answer'
+  const [askState, setAskState] = useState(null)
+  const [transcript, setTranscript] = useState('')
+  const [answer, setAnswer] = useState('')
+  const [answerAudioUrl, setAnswerAudioUrl] = useState(null)
+  const [askError, setAskError] = useState(null)
   
   const audioRef = useRef(null)
   const answerAudioRef = useRef(null)
   const pausedTimeRef = useRef(0)
+  const previewTimeoutRef = useRef(null)
+
+  // Voice recorder hook
+  const {
+    audioLevel,
+    startRecording,
+    cancelRecording,
+  } = useVoiceRecorder({
+    silenceThreshold: 0.015,
+    silenceDuration: 1500,
+    onRecordingComplete: handleRecordingComplete,
+    onError: handleRecordingError,
+  })
+
+  // Handle completed voice recording
+  async function handleRecordingComplete(audioBlob) {
+    setAskState('transcribing')
+    console.log('[App] Transcribing audio, size:', audioBlob.size)
+    
+    try {
+      // Transcribe the audio
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+      
+      const transcribeRes = await fetch('/transcribe', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      if (!transcribeRes.ok) {
+        const errorText = await transcribeRes.text()
+        throw new Error(errorText || 'Transcription failed')
+      }
+      
+      const transcribeData = await transcribeRes.json()
+      
+      if (!transcribeData.text || transcribeData.text.trim().length === 0) {
+        throw new Error('No speech detected. Please try again.')
+      }
+      
+      const transcribedText = transcribeData.text
+      console.log('[App] Transcript:', transcribedText)
+      setTranscript(transcribedText)
+      setAskState('preview')
+      
+      // Auto-send after preview
+      previewTimeoutRef.current = setTimeout(() => {
+        sendQuestion(transcribedText)
+      }, 1500)
+      
+    } catch (err) {
+      console.error('[App] Transcription error:', err)
+      setAskError(err.message)
+      setAskState(null)
+      resumePlayback()
+    }
+  }
+
+  // Send question to Bard
+  async function sendQuestion(questionText) {
+    setAskState('thinking')
+    console.log('[App] Sending question:', questionText)
+    
+    try {
+      const askRes = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionText,
+          chapter_id: currentChapter?.chapter_id,
+          audio_time: pausedTimeRef.current,
+        }),
+      })
+      
+      if (!askRes.ok) {
+        const errorData = await askRes.json()
+        throw new Error(errorData.detail || 'Failed to get answer')
+      }
+      
+      const askData = await askRes.json()
+      console.log('[App] Answer received:', askData.answer?.substring(0, 50) + '...')
+      
+      setAnswer(askData.answer)
+      setAnswerAudioUrl(askData.audio_url)
+      setAskState('answer')
+      
+      // Auto-play answer audio if available
+      if (askData.audio_url && answerAudioRef.current) {
+        answerAudioRef.current.src = askData.audio_url
+        answerAudioRef.current.play().catch(err => {
+          console.warn('[App] Answer audio autoplay blocked:', err)
+        })
+      }
+      
+    } catch (err) {
+      console.error('[App] Ask error:', err)
+      setAskError(err.message)
+      setAskState(null)
+      resumePlayback()
+    }
+  }
+
+  // Handle recording error
+  function handleRecordingError(errorMsg) {
+    console.error('[App] Recording error:', errorMsg)
+    setAskError(errorMsg)
+    setAskState(null)
+    resumePlayback()
+  }
+
+  // Resume playback after Q&A
+  function resumePlayback() {
+    if (audioRef.current) {
+      audioRef.current.currentTime = pausedTimeRef.current
+      audioRef.current.play().catch(err => {
+        console.warn('[App] Resume playback blocked:', err)
+      })
+      setIsPlaying(true)
+    }
+  }
+
+  // Handle answer audio ended - auto-resume narration
+  function handleAnswerAudioEnded() {
+    console.log('[App] Answer audio ended, resuming narration')
+    setAskState(null)
+    setTranscript('')
+    setAnswer('')
+    setAnswerAudioUrl(null)
+    resumePlayback()
+  }
 
   // Fetch chapters on mount
   useEffect(() => {
@@ -56,6 +193,15 @@ function App() {
       })
   }, [currentChapter])
 
+  // Cleanup preview timeout
+  useEffect(() => {
+    return () => {
+      if (previewTimeoutRef.current) {
+        clearTimeout(previewTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Find current sentence based on time
   const currentSentence = alignment.find(
     s => currentTime >= s.start_time && currentTime <= s.end_time
@@ -77,29 +223,38 @@ function App() {
     setIsPlaying(playing)
   }, [])
 
+  // Start the Ask Bard flow
   const handleAskBard = useCallback(() => {
-    // Pause audio and open modal
+    // Clear any previous state
+    setAskError(null)
+    setTranscript('')
+    setAnswer('')
+    setAnswerAudioUrl(null)
+    
+    // Pause audio
     if (audioRef.current) {
       audioRef.current.pause()
       pausedTimeRef.current = audioRef.current.currentTime
     }
     setIsPlaying(false)
-    setIsModalOpen(true)
-  }, [])
+    
+    // Start listening
+    setAskState('listening')
+    startRecording()
+  }, [startRecording])
 
-  const handleCloseModal = useCallback(() => {
-    setIsModalOpen(false)
-  }, [])
-
-  const handleAnswerComplete = useCallback(() => {
-    // Resume playback after answer
-    setIsModalOpen(false)
-    if (audioRef.current) {
-      audioRef.current.currentTime = pausedTimeRef.current
-      audioRef.current.play()
-      setIsPlaying(true)
+  // Cancel the Ask Bard flow
+  const handleCancelAsk = useCallback(() => {
+    if (previewTimeoutRef.current) {
+      clearTimeout(previewTimeoutRef.current)
     }
-  }, [])
+    cancelRecording()
+    setAskState(null)
+    setTranscript('')
+    setAnswer('')
+    setAskError(null)
+    resumePlayback()
+  }, [cancelRecording])
 
   if (isLoading) {
     return (
@@ -158,18 +313,24 @@ function App() {
           </section>
         )}
 
-        {/* Current Sentence Display */}
-        {currentSentence && (
-          <section className="mb-8">
-            <CurrentSentence sentence={currentSentence} />
-          </section>
-        )}
+        {/* Current Sentence / Ask Bard Display */}
+        <section className="mb-8">
+          <CurrentSentence 
+            sentence={currentSentence}
+            askState={askState}
+            audioLevel={audioLevel}
+            transcript={transcript}
+            answer={answer}
+            askError={askError}
+            onCancel={handleCancelAsk}
+          />
+        </section>
 
         {/* Ask Bard Button */}
         <section className="text-center mb-8">
           <AskBardButton 
             onClick={handleAskBard}
-            disabled={!currentChapter || !alignment.length}
+            disabled={!currentChapter || !alignment.length || askState !== null}
           />
           {!alignment.length && currentChapter && (
             <p className="text-ink-500 text-sm mt-2">
@@ -179,15 +340,11 @@ function App() {
         </section>
       </main>
 
-      {/* Question Modal */}
-      <QuestionModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onAnswerComplete={handleAnswerComplete}
-        chapterId={currentChapter?.chapter_id}
-        audioTime={pausedTimeRef.current}
-        currentSentence={currentSentence}
-        answerAudioRef={answerAudioRef}
+      {/* Hidden audio element for answer playback */}
+      <audio 
+        ref={answerAudioRef}
+        onEnded={handleAnswerAudioEnded}
+        className="hidden"
       />
 
       {/* Footer */}
@@ -199,4 +356,3 @@ function App() {
 }
 
 export default App
-

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # OpenAI Settings
     openai_model: str = "gpt-4o"
+    stt_model: str = "gpt-4o-mini-transcribe"
     max_context_tokens: int = 100000
 
     # Server Settings

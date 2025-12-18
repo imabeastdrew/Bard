@@ -11,6 +11,7 @@ export default defineConfig({
       '/answers': 'http://localhost:8000',
       '/context': 'http://localhost:8000',
       '/health': 'http://localhost:8000',
+      '/transcribe': 'http://localhost:8000',
     }
   }
 })
