@@ -1,0 +1,320 @@
+{
+  "chapter_id": 1,
+  "sentences": [
+    {
+      "sentence_id": 1,
+      "start": 0.0,
+      "end": 0.88
+    },
+    {
+      "sentence_id": 2,
+      "start": 0.88,
+      "end": 2.12
+    },
+    {
+      "sentence_id": 6,
+      "start": 2.12,
+      "end": 9.0
+    },
+    {
+      "sentence_id": 7,
+      "start": 9.0,
+      "end": 22.04
+    },
+    {
+      "sentence_id": 8,
+      "start": 22.04,
+      "end": 26.72
+    },
+    {
+      "sentence_id": 9,
+      "start": 26.72,
+      "end": 32.08
+    },
+    {
+      "sentence_id": 10,
+      "start": 32.08,
+      "end": 36.2
+    },
+    {
+      "sentence_id": 11,
+      "start": 36.2,
+      "end": 47.68
+    },
+    {
+      "sentence_id": 12,
+      "start": 47.68,
+      "end": 52.76
+    },
+    {
+      "sentence_id": 13,
+      "start": 52.76,
+      "end": 58.56
+    },
+    {
+      "sentence_id": 14,
+      "start": 58.56,
+      "end": 63.04
+    },
+    {
+      "sentence_id": 15,
+      "start": 63.04,
+      "end": 67.88
+    },
+    {
+      "sentence_id": 16,
+      "start": 67.88,
+      "end": 84.68
+    },
+    {
+      "sentence_id": 17,
+      "start": 84.68,
+      "end": 95.24
+    },
+    {
+      "sentence_id": 18,
+      "start": 95.24,
+      "end": 99.6
+    },
+    {
+      "sentence_id": 19,
+      "start": 99.6,
+      "end": 117.16
+    },
+    {
+      "sentence_id": 20,
+      "start": 117.16,
+      "end": 123.6
+    },
+    {
+      "sentence_id": 21,
+      "start": 123.6,
+      "end": 127.52
+    },
+    {
+      "sentence_id": 22,
+      "start": 127.52,
+      "end": 131.92
+    },
+    {
+      "sentence_id": 23,
+      "start": 131.92,
+      "end": 135.64
+    },
+    {
+      "sentence_id": 24,
+      "start": 135.64,
+      "end": 159.08
+    },
+    {
+      "sentence_id": 25,
+      "start": 159.08,
+      "end": 161.8
+    },
+    {
+      "sentence_id": 26,
+      "start": 161.8,
+      "end": 167.52
+    },
+    {
+      "sentence_id": 27,
+      "start": 167.52,
+      "end": 169.24
+    },
+    {
+      "sentence_id": 28,
+      "start": 169.24,
+      "end": 178.52
+    },
+    {
+      "sentence_id": 29,
+      "start": 178.52,
+      "end": 183.72
+    },
+    {
+      "sentence_id": 30,
+      "start": 183.72,
+      "end": 193.76
+    },
+    {
+      "sentence_id": 31,
+      "start": 193.76,
+      "end": 201.0
+    },
+    {
+      "sentence_id": 32,
+      "start": 201.0,
+      "end": 216.2
+    },
+    {
+      "sentence_id": 33,
+      "start": 216.2,
+      "end": 221.56
+    },
+    {
+      "sentence_id": 34,
+      "start": 221.56,
+      "end": 230.84
+    },
+    {
+      "sentence_id": 35,
+      "start": 230.84,
+      "end": 244.0
+    },
+    {
+      "sentence_id": 36,
+      "start": 244.0,
+      "end": 254.84
+    },
+    {
+      "sentence_id": 37,
+      "start": 254.84,
+      "end": 262.32
+    },
+    {
+      "sentence_id": 38,
+      "start": 262.32,
+      "end": 269.64
+    },
+    {
+      "sentence_id": 39,
+      "start": 269.64,
+      "end": 274.16
+    },
+    {
+      "sentence_id": 40,
+      "start": 274.16,
+      "end": 280.56
+    },
+    {
+      "sentence_id": 41,
+      "start": 280.56,
+      "end": 290.68
+    },
+    {
+      "sentence_id": 42,
+      "start": 290.68,
+      "end": 296.44
+    },
+    {
+      "sentence_id": 43,
+      "start": 296.44,
+      "end": 301.36
+    },
+    {
+      "sentence_id": 44,
+      "start": 301.36,
+      "end": 304.56
+    },
+    {
+      "sentence_id": 45,
+      "start": 304.56,
+      "end": 306.36
+    },
+    {
+      "sentence_id": 46,
+      "start": 306.36,
+      "end": 310.72
+    },
+    {
+      "sentence_id": 47,
+      "start": 310.72,
+      "end": 312.96
+    },
+    {
+      "sentence_id": 48,
+      "start": 312.96,
+      "end": 316.6
+    },
+    {
+      "sentence_id": 49,
+      "start": 316.6,
+      "end": 319.68
+    },
+    {
+      "sentence_id": 50,
+      "start": 319.68,
+      "end": 321.88
+    },
+    {
+      "sentence_id": 51,
+      "start": 321.88,
+      "end": 324.72
+    },
+    {
+      "sentence_id": 52,
+      "start": 324.72,
+      "end": 326.96
+    },
+    {
+      "sentence_id": 53,
+      "start": 326.96,
+      "end": 341.24
+    },
+    {
+      "sentence_id": 54,
+      "start": 341.24,
+      "end": 346.76
+    },
+    {
+      "sentence_id": 55,
+      "start": 346.76,
+      "end": 354.4
+    },
+    {
+      "sentence_id": 56,
+      "start": 354.4,
+      "end": 362.4
+    },
+    {
+      "sentence_id": 57,
+      "start": 362.4,
+      "end": 376.88
+    },
+    {
+      "sentence_id": 58,
+      "start": 376.88,
+      "end": 383.52
+    },
+    {
+      "sentence_id": 59,
+      "start": 383.52,
+      "end": 389.76
+    },
+    {
+      "sentence_id": 60,
+      "start": 389.76,
+      "end": 397.52
+    },
+    {
+      "sentence_id": 61,
+      "start": 397.52,
+      "end": 405.96
+    },
+    {
+      "sentence_id": 62,
+      "start": 405.96,
+      "end": 418.08
+    },
+    {
+      "sentence_id": 63,
+      "start": 418.08,
+      "end": 431.2
+    },
+    {
+      "sentence_id": 64,
+      "start": 431.2,
+      "end": 450.8
+    },
+    {
+      "sentence_id": 65,
+      "start": 450.8,
+      "end": 473.04
+    },
+    {
+      "sentence_id": 66,
+      "start": 473.04,
+      "end": 485.36
+    }
+  ]
+}
