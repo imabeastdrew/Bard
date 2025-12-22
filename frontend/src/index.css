@@ -8,34 +8,51 @@
   }
   
   body {
-    @apply bg-parchment-100 text-ink-900 font-serif;
-    background-image: 
-      radial-gradient(ellipse at top left, rgba(201, 162, 39, 0.05) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(201, 162, 39, 0.08) 0%, transparent 50%);
+    @apply bg-ink-950 text-parchment-100 font-serif;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 bg-gold-600 text-white font-display font-semibold rounded-lg
-           shadow-lg shadow-gold-600/30 hover:bg-gold-500 hover:shadow-gold-500/40
+    @apply px-6 py-3 bg-gold-500 text-white font-display font-semibold rounded-lg
+           shadow-lg shadow-gold-500/30 hover:bg-gold-600 hover:shadow-gold-600/40
            transition-all duration-200 active:scale-95;
   }
   
   .btn-secondary {
-    @apply px-4 py-2 bg-ink-800 text-parchment-100 font-serif rounded-lg
-           shadow-md hover:bg-ink-700 transition-all duration-200 active:scale-95;
+    @apply px-4 py-2 bg-ink-700 text-parchment-100 font-serif rounded-lg
+           shadow-md hover:bg-ink-600 transition-all duration-200 active:scale-95;
   }
   
   .card {
-    @apply bg-parchment-50 rounded-xl shadow-xl shadow-ink-900/10 border border-parchment-300;
+    @apply bg-ink-800 rounded-xl shadow-xl shadow-black/20 border border-ink-700;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 bg-parchment-100 border-2 border-parchment-400 rounded-lg
-           font-serif text-ink-900 placeholder:text-ink-400
+    @apply w-full px-4 py-3 bg-ink-700 border-2 border-ink-600 rounded-lg
+           font-serif text-parchment-100 placeholder:text-ink-400
            focus:outline-none focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20
            transition-all duration-200;
+  }
+
+  /* Mic indicator animations */
+  .mic-glow-pulse {
+    filter: drop-shadow(0 0 8px rgba(255, 36, 0, 0.6))
+            drop-shadow(0 0 16px rgba(255, 36, 0, 0.4));
+    animation: mic-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes mic-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(255, 36, 0, 0.6))
+            drop-shadow(0 0 16px rgba(255, 36, 0, 0.4));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(255, 36, 0, 0.8))
+            drop-shadow(0 0 24px rgba(255, 36, 0, 0.5));
+    transform: scale(1.05);
   }
 }
 
@@ -46,15 +63,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-parchment-200 rounded;
+  @apply bg-ink-800 rounded;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-ink-400 rounded hover:bg-ink-500;
+  @apply bg-ink-600 rounded hover:bg-ink-500;
 }
 
 /* Audio player custom styling */
 audio::-webkit-media-controls-panel {
-  @apply bg-parchment-200;
+  @apply bg-ink-700;
 }
-

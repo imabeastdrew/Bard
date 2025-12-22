@@ -21,9 +21,10 @@ def get_elevenlabs_client() -> ElevenLabs:
 
 
 async def synthesize_answer(answer_text: str) -> str:
-    """Synthesize answer text to audio using ElevenLabs.
+    """Synthesize answer text to audio using ElevenLabs streaming API.
 
-    Uses the same voice_id as the audiobook narration for consistency.
+    Uses the streaming endpoint for faster time-to-first-byte,
+    then saves to file for playback.
 
     Args:
         answer_text: The text answer to synthesize
@@ -44,17 +45,17 @@ async def synthesize_answer(answer_text: str) -> str:
     answers_dir.mkdir(parents=True, exist_ok=True)
     audio_path = answers_dir / f"answer_{answer_id}.mp3"
 
-    # Generate audio
-    audio_generator = client.text_to_speech.convert(
+    # Use streaming endpoint for lower latency
+    audio_stream = client.text_to_speech.stream(
         voice_id=settings.elevenlabs_voice_id,
         text=answer_text,
         model_id=settings.tts_model_id,
         output_format=settings.tts_output_format,
     )
 
-    # Write to file
+    # Write chunks to file as they arrive
     with open(audio_path, "wb") as f:
-        for chunk in audio_generator:
+        for chunk in audio_stream:
             f.write(chunk)
 
     # Return URL path for the API to serve
@@ -73,7 +74,8 @@ def get_answer_audio_path(answer_id: str) -> Path | None:
 async def synthesize_answer_streaming(answer_text: str):
     """Synthesize answer with streaming audio output.
 
-    Yields audio chunks as they're generated.
+    Yields audio chunks as they're generated - useful for
+    streaming directly to client without saving to file.
     """
     settings = get_settings()
 
@@ -83,7 +85,7 @@ async def synthesize_answer_streaming(answer_text: str):
     client = get_elevenlabs_client()
 
     # Use streaming endpoint
-    audio_stream = client.text_to_speech.convert(
+    audio_stream = client.text_to_speech.stream(
         voice_id=settings.elevenlabs_voice_id,
         text=answer_text,
         model_id=settings.tts_model_id,
@@ -92,4 +94,3 @@ async def synthesize_answer_streaming(answer_text: str):
 
     for chunk in audio_stream:
         yield chunk
-

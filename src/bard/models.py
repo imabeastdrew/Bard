@@ -69,6 +69,15 @@ class AskRequest(BaseModel):
     audio_time: float = Field(ge=0)
 
 
+class AskTimingInfo(BaseModel):
+    """Timing breakdown for the /ask endpoint."""
+
+    total_ms: float
+    context_build_ms: float
+    openai_llm_ms: float
+    elevenlabs_tts_ms: float | None = None
+
+
 class AskResponse(BaseModel):
     """Response to a question."""
 
@@ -76,6 +85,7 @@ class AskResponse(BaseModel):
     audio_url: str | None = None
     current_sentence_id: int
     context_sentence_count: int
+    timing: AskTimingInfo | None = None
 
 
 class ChapterInfo(BaseModel):
@@ -95,4 +105,3 @@ class SentenceAlignment(BaseModel):
     text: str
     start_time: float
     end_time: float
-

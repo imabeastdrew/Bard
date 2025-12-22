@@ -139,12 +139,12 @@ export default function VoiceRecorder({
   if (state === 'error') {
     return (
       <div className="flex flex-col items-center gap-4 py-6">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-16 h-16 bg-gold-100 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-gold-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <p className="text-red-600 text-center">{errorMessage}</p>
+        <p className="text-gold-700 text-center">{errorMessage}</p>
         <div className="flex gap-3">
           <button onClick={handleCancel} className="btn-secondary">
             Cancel
@@ -160,13 +160,13 @@ export default function VoiceRecorder({
   if (state === 'transcribing') {
     return (
       <div className="flex flex-col items-center gap-4 py-6">
-        <div className="w-16 h-16 bg-ink-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-ink-600 animate-spin" fill="none" viewBox="0 0 24 24">
+        <div className="w-16 h-16 bg-parchment-200 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
         </div>
-        <p className="text-ink-600 font-medium">Transcribing...</p>
+        <p className="text-ink-700 font-medium">Transcribing...</p>
       </div>
     )
   }
@@ -176,13 +176,13 @@ export default function VoiceRecorder({
     
     return (
       <div className="flex flex-col items-center gap-4 py-6">
-        <div className="w-full p-4 bg-parchment-200/50 rounded-lg border border-parchment-300">
+        <div className="w-full p-4 bg-parchment-200/50 rounded-lg border border-parchment-400">
           <p className="text-ink-500 text-xs uppercase tracking-wider mb-2">You asked:</p>
           <p className="text-ink-800 font-serif text-lg">"{transcript}"</p>
         </div>
         
         {/* Progress bar */}
-        <div className="w-full h-1 bg-ink-200 rounded-full overflow-hidden">
+        <div className="w-full h-1 bg-parchment-300 rounded-full overflow-hidden">
           <div 
             className="h-full bg-gold-500 transition-all duration-100"
             style={{ width: `${progressPercent}%` }}
@@ -200,11 +200,11 @@ export default function VoiceRecorder({
       {/* Pulsing microphone indicator */}
       <div className="relative">
         <div 
-          className="absolute inset-0 bg-red-500/30 rounded-full animate-ping"
+          className="absolute inset-0 bg-gold-500/30 rounded-full animate-ping"
           style={{ animationDuration: '1.5s' }}
         />
         <div 
-          className="relative w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg"
+          className="relative w-20 h-20 bg-gradient-to-br from-gold-400 via-gold-500 to-gold-700 rounded-full flex items-center justify-center shadow-lg shadow-gold-500/40"
           style={{
             transform: `scale(${1 + audioLevel * 0.3})`,
             transition: 'transform 0.1s ease-out',
@@ -216,7 +216,7 @@ export default function VoiceRecorder({
         </div>
       </div>
 
-      <p className="text-ink-700 font-medium text-lg">Listening...</p>
+      <p className="text-ink-800 font-medium text-lg">Listening...</p>
       <p className="text-ink-500 text-sm">Speak your question</p>
 
       {/* Audio level meter */}
@@ -229,8 +229,8 @@ export default function VoiceRecorder({
               key={i}
               className={`w-2 rounded-full transition-all duration-75 ${
                 isActive 
-                  ? i < 4 ? 'bg-green-500' : i < 8 ? 'bg-yellow-500' : 'bg-red-500'
-                  : 'bg-ink-200'
+                  ? i < 4 ? 'bg-amber-400' : i < 8 ? 'bg-gold-400' : 'bg-gold-500'
+                  : 'bg-parchment-300'
               }`}
               style={{ 
                 height: `${12 + i * 2}px`,
@@ -252,4 +252,3 @@ export default function VoiceRecorder({
     </div>
   )
 }
-

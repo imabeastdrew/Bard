@@ -138,4 +138,3 @@ def get_context_stats(current_sentence_id: int) -> dict:
         "chapter_count": len(chapters),
         "estimated_tokens": token_count,
     }
-

@@ -9,7 +9,6 @@ This script orchestrates:
 
 import argparse
 import sys
-from pathlib import Path
 
 from bard.config import get_settings
 from bard.preprocessing.alignment import align_all_chapters, validate_alignments
@@ -175,4 +174,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

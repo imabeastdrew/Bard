@@ -1,9 +1,9 @@
 """SQLite database management for Bard."""
 
 import sqlite3
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Generator
 
 from bard.config import get_settings
 from bard.models import Chapter, ChapterInfo, Sentence, SentenceAlignment
@@ -89,9 +89,7 @@ def insert_chapter(chapter: Chapter) -> None:
 def get_chapter(chapter_id: int) -> Chapter | None:
     """Get a chapter by ID."""
     with get_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM chapters WHERE chapter_id = ?", (chapter_id,)
-        ).fetchone()
+        row = conn.execute("SELECT * FROM chapters WHERE chapter_id = ?", (chapter_id,)).fetchone()
         if row:
             return Chapter(**dict(row))
         return None
@@ -313,4 +311,3 @@ def get_total_sentence_count() -> int:
     with get_connection() as conn:
         row = conn.execute("SELECT COUNT(*) as count FROM sentences").fetchone()
         return row["count"] if row else 0
-

@@ -67,4 +67,3 @@ async def get_alignment(chapter_id: int) -> list[SentenceAlignment]:
         )
 
     return alignment
-

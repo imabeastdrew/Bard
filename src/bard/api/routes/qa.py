@@ -1,9 +1,11 @@
 """Question-answering routes for the Ask Bard feature."""
 
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+import time
 
-from bard.models import AskRequest, AskResponse
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+
+from bard.models import AskRequest, AskResponse, AskTimingInfo
 from bard.services.context import build_context, get_context_stats, resolve_current_sentence
 from bard.services.llm import generate_answer
 from bard.services.tts import get_answer_audio_path, synthesize_answer
@@ -23,6 +25,8 @@ async def ask_question(request: AskRequest) -> AskResponse:
 
     The answer uses the same narrator voice as the audiobook.
     """
+    t_start = time.perf_counter()
+
     try:
         # 1. Resolve current sentence from playback position
         current_sentence = resolve_current_sentence(request.chapter_id, request.audio_time)
@@ -32,6 +36,8 @@ async def ask_question(request: AskRequest) -> AskResponse:
     # 2. Build narrative context (all text up to current sentence)
     context = build_context(current_sentence.sentence_id)
     context_stats = get_context_stats(current_sentence.sentence_id)
+
+    t_context_done = time.perf_counter()
 
     if not context:
         raise HTTPException(
@@ -46,21 +52,37 @@ async def ask_question(request: AskRequest) -> AskResponse:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate answer: {e}")
 
+    t_llm_done = time.perf_counter()
+
     # 4. Synthesize answer to audio
+    tts_ms = None
     try:
         audio_url = await synthesize_answer(answer_text)
+        t_tts_done = time.perf_counter()
+        tts_ms = (t_tts_done - t_llm_done) * 1000
     except ValueError as e:
         raise HTTPException(status_code=500, detail=f"TTS error: {e}")
     except Exception as e:
         # Return answer without audio if TTS fails (e.g., quota exceeded)
         print(f"Warning: TTS synthesis failed: {e}")
         audio_url = None
+        t_tts_done = time.perf_counter()
+
+    # Calculate timing
+    t_end = time.perf_counter()
+    timing = AskTimingInfo(
+        total_ms=(t_end - t_start) * 1000,
+        context_build_ms=(t_context_done - t_start) * 1000,
+        openai_llm_ms=(t_llm_done - t_context_done) * 1000,
+        elevenlabs_tts_ms=tts_ms,
+    )
 
     return AskResponse(
         answer=answer_text,
         audio_url=audio_url,
         current_sentence_id=current_sentence.sentence_id,
         context_sentence_count=context_stats["sentence_count"],
+        timing=timing,
     )
 
 
@@ -135,4 +157,3 @@ async def get_context_preview(chapter_id: int, audio_time: float) -> dict:
         "context_preview": context_preview,
         "stats": stats,
     }
-

@@ -91,7 +91,9 @@ def parse_aeneas_output(aeneas_data: dict, chapter_id: int) -> ChapterAlignment:
     alignments: list[AlignmentData] = []
     for i, fragment in enumerate(fragments):
         if i >= len(sentence_ids):
-            print(f"  Warning: More fragments ({len(fragments)}) than sentences ({len(sentence_ids)})")
+            print(
+                f"  Warning: More fragments ({len(fragments)}) than sentences ({len(sentence_ids)})"
+            )
             break
 
         alignments.append(
@@ -163,9 +165,7 @@ def align_chapter(chapter_id: int, force: bool = False) -> ChapterAlignment:
     print(f"  Saved alignment to {alignment_path}")
 
     # Update database with alignment times
-    update_alignments_batch(
-        [(a.sentence_id, a.start, a.end) for a in alignment.sentences]
-    )
+    update_alignments_batch([(a.sentence_id, a.start, a.end) for a in alignment.sentences])
     print(f"  Updated {len(alignment.sentences)} sentence alignments in database")
 
     return alignment

@@ -90,9 +90,9 @@ const AudioPlayer = forwardRef(function AudioPlayer(
       />
 
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl text-ink-800">{chapterTitle}</h2>
+        <h2 className="font-display text-xl text-parchment-100">{chapterTitle}</h2>
         {!isLoaded && (
-          <span className="text-ink-500 text-sm animate-pulse">Loading audio...</span>
+          <span className="text-ink-400 text-sm animate-pulse">Loading audio...</span>
         )}
       </div>
 
@@ -100,7 +100,7 @@ const AudioPlayer = forwardRef(function AudioPlayer(
       <div
         ref={progressRef}
         onClick={handleProgressClick}
-        className="h-3 bg-parchment-300 rounded-full cursor-pointer overflow-hidden group"
+        className="h-3 bg-ink-700 rounded-full cursor-pointer overflow-hidden group"
       >
         <div
           className="h-full bg-gradient-to-r from-gold-500 to-gold-600 rounded-full transition-all duration-100 relative"
@@ -111,7 +111,7 @@ const AudioPlayer = forwardRef(function AudioPlayer(
       </div>
 
       {/* Time Display */}
-      <div className="flex justify-between text-ink-500 text-sm font-mono">
+      <div className="flex justify-between text-ink-400 text-sm font-mono">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration || 0)}</span>
       </div>
@@ -120,7 +120,7 @@ const AudioPlayer = forwardRef(function AudioPlayer(
       <div className="flex items-center justify-center gap-4">
         <button
           onClick={() => handleSkip(-10)}
-          className="p-2 text-ink-600 hover:text-ink-800 transition-colors"
+          className="p-2 text-ink-400 hover:text-parchment-100 transition-colors"
           title="Rewind 10 seconds"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,7 +131,7 @@ const AudioPlayer = forwardRef(function AudioPlayer(
         <button
           onClick={togglePlay}
           disabled={!isLoaded}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-gold-500 to-gold-700 text-white shadow-lg shadow-gold-500/40 hover:from-gold-400 hover:to-gold-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-gold-400 via-gold-500 to-gold-700 text-white shadow-lg shadow-gold-500/40 hover:from-gold-300 hover:via-gold-400 hover:to-gold-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
         >
           {isPlaying ? (
             <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -146,7 +146,7 @@ const AudioPlayer = forwardRef(function AudioPlayer(
 
         <button
           onClick={() => handleSkip(10)}
-          className="p-2 text-ink-600 hover:text-ink-800 transition-colors"
+          className="p-2 text-ink-400 hover:text-parchment-100 transition-colors"
           title="Forward 10 seconds"
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -159,4 +159,3 @@ const AudioPlayer = forwardRef(function AudioPlayer(
 })
 
 export default AudioPlayer
-

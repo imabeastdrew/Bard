@@ -26,11 +26,11 @@ class Settings(BaseSettings):
     db_path: Path = Path("data/bard.db")
 
     # TTS Settings
-    tts_model_id: str = "eleven_multilingual_v2"
+    tts_model_id: str = "eleven_flash_v2_5"
     tts_output_format: str = "mp3_44100_128"
 
     # OpenAI Settings
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-5-nano"
     stt_model: str = "gpt-4o-mini-transcribe"
     max_context_tokens: int = 100000
 
@@ -61,4 +61,3 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings()
-
