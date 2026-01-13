@@ -18,7 +18,11 @@ class Settings(BaseSettings):
     # API Keys
     elevenlabs_api_key: str = ""
     elevenlabs_voice_id: str = ""
+    elevenlabs_agent_id: str = ""  # ElevenLabs Conversational AI agent ID
     openai_api_key: str = ""
+    
+    # Feature Flags
+    use_elevenlabs_agent: bool = True  # Toggle between agent and legacy STT-LLM-TTS
 
     # Paths (relative to project root)
     data_dir: Path = Path("data")
@@ -33,6 +37,10 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-5-nano"
     stt_model: str = "gpt-4o-mini-transcribe"
     max_context_tokens: int = 100000
+
+    # Conversation Settings
+    conversation_timeout_ms: int = 10000  # Auto-resume after silence (ms)
+    max_context_words: int = 2000  # Max words to send as context
 
     # Server Settings
     host: str = "0.0.0.0"

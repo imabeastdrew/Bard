@@ -5,6 +5,7 @@ import CurrentSentence from './components/CurrentSentence'
 import Header from './components/Header'
 import useVoiceRecorder from './hooks/useVoiceRecorder'
 import useWakeWord from './hooks/useWakeWord'
+import { useElevenLabsConversation, ConversationState } from './hooks/useElevenLabsConversation'
 
 function App() {
   const [chapters, setChapters] = useState([])
@@ -16,8 +17,12 @@ function App() {
   const [error, setError] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   
-  // Ask Bard state machine
-  // null | 'listening' | 'transcribing' | 'preview' | 'thinking' | 'answer'
+  // Agent configuration
+  const [agentConfig, setAgentConfig] = useState(null)
+  const [useAgent, setUseAgent] = useState(true) // Feature flag
+  
+  // Ask Bard state machine (legacy + new)
+  // null | 'listening' | 'transcribing' | 'preview' | 'thinking' | 'answer' | 'conversation'
   const [askState, setAskState] = useState(null)
   const [transcript, setTranscript] = useState('')
   const [answer, setAnswer] = useState('')
@@ -29,16 +34,80 @@ function App() {
   const pausedTimeRef = useRef(0)
   const previewTimeoutRef = useRef(null)
   
-  // Performance timing refs
+  // Performance timing refs (legacy)
   const timingRef = useRef({
-    t0_recordingComplete: null,  // Audio capture done
-    t1_transcriptionDone: null,  // Transcription response received
-    t2_previewTimeout: null,     // Preview timeout fires
-    t3_askResponseDone: null,    // /ask response received
-    t4_audioPlaying: null,       // Answer audio starts playing
+    t0_recordingComplete: null,
+    t1_transcriptionDone: null,
+    t2_previewTimeout: null,
+    t3_askResponseDone: null,
+    t4_audioPlaying: null,
   })
 
-  // Voice recorder hook
+  // Get context for conversation
+  const getContext = useCallback(() => {
+    if (!currentChapter || !alignment.length) return null
+    
+    // Find current sentence
+    const currentSentence = alignment.find(
+      s => pausedTimeRef.current >= s.start_time && pausedTimeRef.current <= s.end_time
+    )
+    
+    // Get text heard so far (up to max words)
+    const maxWords = agentConfig?.max_context_words || 2000
+    const sentencesHeard = alignment.filter(s => s.end_time <= pausedTimeRef.current)
+    let textHeard = sentencesHeard.map(s => s.text).join(' ')
+    
+    // Truncate to max words (from the end, keeping recent context)
+    const words = textHeard.split(/\s+/)
+    if (words.length > maxWords) {
+      textHeard = '...' + words.slice(-maxWords).join(' ')
+    }
+    
+    return `Current position: Chapter ${currentChapter.chapter_id}, "${currentChapter.title}"
+${currentSentence ? `Current sentence: "${currentSentence.text}"` : ''}
+    
+Text heard so far (${words.length} words):
+${textHeard}`
+  }, [currentChapter, alignment, agentConfig])
+
+  // Resume playback after conversation
+  const resumePlayback = useCallback(() => {
+    console.log('[App] Resuming playback from', pausedTimeRef.current)
+    if (audioRef.current) {
+      audioRef.current.currentTime = pausedTimeRef.current
+      audioRef.current.play().catch(err => {
+        console.warn('[App] Resume playback blocked:', err)
+      })
+      setIsPlaying(true)
+    }
+    // Clear conversation state
+    setAskState(null)
+    setTranscript('')
+    setAnswer('')
+    setAskError(null)
+    setAnswerAudioUrl(null)
+  }, [])
+
+  // ElevenLabs Conversation hook
+  const {
+    conversationState,
+    silenceCountdown,
+    startConversation,
+    endConversation,
+  } = useElevenLabsConversation({
+    agentId: agentConfig?.agent_id,
+    timeoutMs: agentConfig?.conversation_timeout_ms || 10000,
+    onResumeAudiobook: resumePlayback,
+    getContext,
+    onError: (err) => {
+      console.error('[App] Conversation error:', err)
+      setAskError(err.message || 'Conversation error')
+      setAskState(null)
+      resumePlayback()
+    },
+  })
+
+  // Voice recorder hook (legacy)
   const {
     audioLevel,
     startRecording,
@@ -51,10 +120,11 @@ function App() {
   })
 
   // Wake word callback - triggers Ask Bard flow
-  const handleWakeWord = useCallback(() => {
+  const handleWakeWord = useCallback(async () => {
     // Only trigger if not already in Q&A flow and alignment is ready
     if (askState === null && alignment.length > 0) {
       console.log('[App] Wake word detected! Starting Ask Bard flow...')
+      
       // Clear any previous state
       setAskError(null)
       setTranscript('')
@@ -68,11 +138,27 @@ function App() {
       }
       setIsPlaying(false)
       
-      // Start listening
-      setAskState('listening')
-      startRecording()
+      // Use ElevenLabs Agent or legacy flow
+      if (useAgent && agentConfig?.agent_id) {
+        console.log('[App] Using ElevenLabs Conversational AI')
+        setAskState('conversation')
+        try {
+          await startConversation()
+        } catch (err) {
+          console.error('[App] Failed to start conversation:', err)
+          // Fallback to legacy flow
+          console.log('[App] Falling back to legacy flow')
+          setAskState('listening')
+          startRecording()
+        }
+      } else {
+        // Legacy flow
+        console.log('[App] Using legacy STT-LLM-TTS flow')
+        setAskState('listening')
+        startRecording()
+      }
     }
-  }, [askState, alignment.length, startRecording])
+  }, [askState, alignment.length, useAgent, agentConfig, startConversation, startRecording])
 
   // Wake word detection - active when audiobook is playing and not in Q&A
   const {
@@ -85,9 +171,8 @@ function App() {
     onWakeWord: handleWakeWord,
   })
 
-  // Handle completed voice recording
+  // Handle completed voice recording (legacy flow)
   async function handleRecordingComplete(audioBlob) {
-    // T0: Recording complete - start timing
     timingRef.current.t0_recordingComplete = performance.now()
     console.log('[Timing] T0 - Recording complete, starting pipeline...')
     
@@ -95,7 +180,6 @@ function App() {
     console.log('[App] Transcribing audio, size:', audioBlob.size)
     
     try {
-      // Transcribe the audio
       const formData = new FormData()
       formData.append('audio', audioBlob, 'recording.webm')
       
@@ -111,7 +195,6 @@ function App() {
       
       const transcribeData = await transcribeRes.json()
       
-      // T1: Transcription done
       timingRef.current.t1_transcriptionDone = performance.now()
       const transcriptionLatency = timingRef.current.t1_transcriptionDone - timingRef.current.t0_recordingComplete
       console.log(`[Timing] T1 - Transcription done: ${transcriptionLatency.toFixed(0)}ms`)
@@ -127,8 +210,6 @@ function App() {
       console.log('[App] Transcript:', transcribedText)
       setTranscript(transcribedText)
       
-      // Skip preview - send immediately for lower latency
-      // T2: Immediate (no preview delay)
       timingRef.current.t2_previewTimeout = performance.now()
       console.log(`[Timing] T2 - Skipping preview, sending immediately`)
       sendQuestion(transcribedText)
@@ -141,7 +222,7 @@ function App() {
     }
   }
 
-  // Send question to Bard
+  // Send question to Bard (legacy flow)
   async function sendQuestion(questionText) {
     setAskState('thinking')
     console.log('[App] Sending question:', questionText)
@@ -164,7 +245,6 @@ function App() {
       
       const askData = await askRes.json()
       
-      // T3: Ask response received
       timingRef.current.t3_askResponseDone = performance.now()
       const askLatency = timingRef.current.t3_askResponseDone - timingRef.current.t2_previewTimeout
       const totalSoFar = timingRef.current.t3_askResponseDone - timingRef.current.t0_recordingComplete
@@ -179,13 +259,10 @@ function App() {
       setAnswerAudioUrl(askData.audio_url)
       setAskState('answer')
       
-      // Auto-play answer audio if available
       if (askData.audio_url && answerAudioRef.current) {
         answerAudioRef.current.src = askData.audio_url
         
-        // Add event listener for when audio starts playing
         const handlePlay = () => {
-          // T4: Audio starts playing
           timingRef.current.t4_audioPlaying = performance.now()
           const audioLoadTime = timingRef.current.t4_audioPlaying - timingRef.current.t3_askResponseDone
           const totalLatency = timingRef.current.t4_audioPlaying - timingRef.current.t0_recordingComplete
@@ -217,7 +294,7 @@ function App() {
     }
   }
 
-  // Handle recording error
+  // Handle recording error (legacy)
   function handleRecordingError(errorMsg) {
     console.error('[App] Recording error:', errorMsg)
     setAskError(errorMsg)
@@ -225,26 +302,35 @@ function App() {
     resumePlayback()
   }
 
-  // Resume playback after Q&A
-  function resumePlayback() {
-    if (audioRef.current) {
-      audioRef.current.currentTime = pausedTimeRef.current
-      audioRef.current.play().catch(err => {
-        console.warn('[App] Resume playback blocked:', err)
-      })
-      setIsPlaying(true)
-    }
-  }
-
-  // Handle answer audio ended - auto-resume narration
+  // Handle answer audio ended - auto-resume narration (legacy)
   function handleAnswerAudioEnded() {
     console.log('[App] Answer audio ended, resuming narration')
-    setAskState(null)
-    setTranscript('')
-    setAnswer('')
-    setAnswerAudioUrl(null)
     resumePlayback()
   }
+
+  // Fetch agent configuration
+  useEffect(() => {
+    fetch('/agent/config')
+      .then(res => {
+        if (!res.ok) {
+          console.warn('[App] Agent config not available, using legacy flow')
+          setUseAgent(false)
+          return null
+        }
+        return res.json()
+      })
+      .then(data => {
+        if (data) {
+          console.log('[App] Agent config loaded:', data)
+          setAgentConfig(data)
+          setUseAgent(data.use_agent)
+        }
+      })
+      .catch(err => {
+        console.warn('[App] Failed to fetch agent config:', err)
+        setUseAgent(false)
+      })
+  }, [])
 
   // Fetch chapters on mount
   useEffect(() => {
@@ -318,19 +404,47 @@ function App() {
       clearTimeout(previewTimeoutRef.current)
     }
     cancelRecording()
-    setAskState(null)
-    setTranscript('')
-    setAnswer('')
-    setAskError(null)
+    
+    // End conversation if in agent mode
+    if (askState === 'conversation') {
+      endConversation()
+    }
+    
     resumePlayback()
-  }, [cancelRecording])
+  }, [cancelRecording, askState, endConversation, resumePlayback])
+
+  // Manual resume button handler
+  const handleManualResume = useCallback(() => {
+    console.log('[App] Manual resume triggered')
+    if (askState === 'conversation') {
+      endConversation()
+    } else {
+      resumePlayback()
+    }
+  }, [askState, endConversation, resumePlayback])
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev)
   }, [])
 
-  // Determine mic indicator state
+  // Determine mic/conversation indicator state
   const micIsActive = wakeWordListening && wakeWordLoaded && !wakeWordError
+  const isInConversation = askState === 'conversation'
+  
+  // Map conversation state to display state
+  const getConversationDisplayState = () => {
+    if (!isInConversation) return null
+    switch (conversationState) {
+      case ConversationState.CONNECTING:
+        return 'connecting'
+      case ConversationState.LISTENING:
+        return 'listening'
+      case ConversationState.SPEAKING:
+        return 'speaking'
+      default:
+        return 'idle'
+    }
+  }
 
   if (isLoading) {
     return (
@@ -361,6 +475,8 @@ function App() {
     )
   }
 
+  const conversationDisplayState = getConversationDisplayState()
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header 
@@ -383,24 +499,34 @@ function App() {
       `}>
         <div className="max-w-2xl mx-auto px-4 py-8">
           
-          {/* Mic Indicator - centered above player */}
-          <div className="flex justify-center mb-6">
+          {/* Mic/Conversation Indicator - centered above player */}
+          <div className="flex flex-col items-center mb-6">
             <div 
               className={`
                 transition-all duration-300
-                ${micIsActive ? 'mic-glow-pulse' : ''}
+                ${micIsActive && !isInConversation ? 'mic-glow-pulse' : ''}
+                ${conversationDisplayState === 'listening' ? 'mic-glow-pulse' : ''}
+                ${conversationDisplayState === 'speaking' ? 'animate-pulse' : ''}
               `}
               title={
-                wakeWordError 
-                  ? `Error: ${wakeWordError}` 
-                  : micIsActive 
-                    ? 'Listening for "Hey Bard"' 
-                    : 'Mic inactive'
+                isInConversation 
+                  ? `Conversation: ${conversationDisplayState}`
+                  : wakeWordError 
+                    ? `Error: ${wakeWordError}` 
+                    : micIsActive 
+                      ? 'Listening for "Hey Bard"' 
+                      : 'Mic inactive'
               }
             >
               <svg 
                 className={`w-12 h-12 transition-colors duration-300 ${
-                  micIsActive ? 'text-gold-500' : 'text-ink-500'
+                  isInConversation 
+                    ? conversationDisplayState === 'speaking' 
+                      ? 'text-gold-400' 
+                      : 'text-gold-500'
+                    : micIsActive 
+                      ? 'text-gold-500' 
+                      : 'text-ink-500'
                 }`}
                 fill="currentColor" 
                 viewBox="0 0 24 24"
@@ -408,6 +534,22 @@ function App() {
                 <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
               </svg>
             </div>
+            
+            {/* Silence countdown */}
+            {isInConversation && silenceCountdown !== null && (
+              <p className="text-ink-400 text-sm mt-2 animate-pulse">
+                Resuming in {silenceCountdown}s...
+              </p>
+            )}
+            
+            {/* Conversation status */}
+            {isInConversation && (
+              <p className="text-parchment-200 text-sm mt-1">
+                {conversationDisplayState === 'connecting' && 'Connecting...'}
+                {conversationDisplayState === 'listening' && 'Listening...'}
+                {conversationDisplayState === 'speaking' && 'Speaking...'}
+              </p>
+            )}
           </div>
 
           {/* Audio Player */}
@@ -434,12 +576,28 @@ function App() {
               answer={answer}
               askError={askError}
               onCancel={handleCancelAsk}
+              conversationState={conversationDisplayState}
             />
           </section>
+
+          {/* Resume button during conversation */}
+          {isInConversation && (
+            <div className="flex justify-center mb-8">
+              <button
+                onClick={handleManualResume}
+                className="px-6 py-3 bg-ink-700 hover:bg-ink-600 text-parchment-100 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+                Resume Audiobook
+              </button>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* Hidden audio element for answer playback */}
+      {/* Hidden audio element for answer playback (legacy) */}
       <audio 
         ref={answerAudioRef}
         onEnded={handleAnswerAudioEnded}

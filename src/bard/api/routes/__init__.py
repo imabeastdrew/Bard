@@ -1,7 +1,8 @@
 """API routes for Bard."""
 
+from bard.api.routes.agent import router as agent_router
 from bard.api.routes.playback import router as playback_router
 from bard.api.routes.qa import router as qa_router
 from bard.api.routes.transcribe import router as transcribe_router
 
-__all__ = ["playback_router", "qa_router", "transcribe_router"]
+__all__ = ["agent_router", "playback_router", "qa_router", "transcribe_router"]
